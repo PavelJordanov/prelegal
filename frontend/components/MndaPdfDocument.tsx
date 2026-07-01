@@ -7,9 +7,12 @@ import {
   type MndaFormData,
   type PartyDetails,
 } from "@/lib/mnda-content";
+import { NOTO_SANS_FAMILY, registerNotoSansFont } from "@/lib/pdf-fonts";
+
+registerNotoSansFont();
 
 const styles = StyleSheet.create({
-  page: { padding: 48, fontSize: 10, lineHeight: 1.5, color: "#18181b" },
+  page: { padding: 48, fontSize: 10, lineHeight: 1.5, color: "#18181b", fontFamily: NOTO_SANS_FAMILY },
   title: { fontSize: 16, fontWeight: 700, marginBottom: 12 },
   h2: { fontSize: 13, fontWeight: 700, marginTop: 16, marginBottom: 8 },
   h3: { fontSize: 10.5, fontWeight: 700, marginTop: 8, marginBottom: 2 },

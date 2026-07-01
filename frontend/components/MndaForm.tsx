@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { MndaFormData, PartyDetails } from "@/lib/mnda-content";
 
 interface MndaFormProps {
@@ -16,6 +17,58 @@ const legendClass = "text-base font-semibold text-zinc-900";
 function clampYears(rawValue: string): number {
   const parsed = Math.round(Number(rawValue));
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+// Free-types like a normal number input (so a user can type a leading "-"
+// or "." without it being immediately clamped away) and only normalizes to
+// a valid positive integer once the field loses focus. Propagates each
+// keystroke's parsed value upward while it's already valid, so the rest of
+// the form stays in sync as the user types a positive number.
+function YearsInput({
+  id,
+  value,
+  onChange,
+  disabled,
+}: {
+  id: string;
+  value: number;
+  onChange: (years: number) => void;
+  disabled: boolean;
+}) {
+  // Seeded once from the initial value; nothing outside this input's own
+  // onChange/onBlur ever changes `years` (switching the MNDA Term /
+  // Confidentiality Term radio only toggles which option is selected, not
+  // the year count), so there's no external value to resync from. Syncing
+  // on every prop change was tried and reverted: since onChange propagates
+  // Math.round(parsed) on each valid keystroke, a still-in-progress value
+  // like "2.7" would round-trip back down as "3" and stomp what the user
+  // was mid-typing, before they ever reached blur.
+  const [rawValue, setRawValue] = useState(() => String(value));
+
+  return (
+    <input
+      id={id}
+      type="number"
+      min={1}
+      step={1}
+      className={`${inputClass} w-20`}
+      value={rawValue}
+      disabled={disabled}
+      onChange={(e) => {
+        const nextRaw = e.target.value;
+        setRawValue(nextRaw);
+        const parsed = Number(nextRaw);
+        if (Number.isFinite(parsed) && parsed > 0) {
+          onChange(Math.round(parsed));
+        }
+      }}
+      onBlur={() => {
+        const clamped = clampYears(rawValue);
+        setRawValue(String(clamped));
+        onChange(clamped);
+      }}
+    />
+  );
 }
 
 function PartyFields({
@@ -114,15 +167,11 @@ function YearsOrFixedField({
             />
             {yearsPrefix}
           </label>
-          <input
+          <YearsInput
             id={yearsInputId}
-            type="number"
-            min={1}
-            step={1}
-            className={`${inputClass} w-20`}
             value={years}
+            onChange={onYearsChange}
             disabled={!yearsSelected}
-            onChange={(e) => onYearsChange(clampYears(e.target.value))}
           />
           <label htmlFor={yearsInputId}>{yearsSuffix}</label>
         </div>
