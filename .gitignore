@@ -52,6 +52,10 @@ dmypy.json
 *.sqlite3
 *.db
 
+# Backend runtime artifacts
+backend/data/
+backend/static/
+
 # Jupyter
 .ipynb_checkpoints
 
