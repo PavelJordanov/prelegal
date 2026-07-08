@@ -89,7 +89,7 @@ export default function NdaChat({ fields, onFieldsChange, onCompleteChange }: Nd
           disabled={status === "sending"}
           placeholder="Type your reply…"
           aria-label="Your reply"
-          className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-brand-blue disabled:opacity-50"
+          className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm text-black outline-none focus:border-brand-blue disabled:opacity-50"
         />
         <button
           type="submit"

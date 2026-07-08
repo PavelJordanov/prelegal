@@ -64,7 +64,7 @@ export default function NdaChatPage() {
       </header>
 
       <main className="mx-auto grid w-full max-w-6xl flex-1 items-start grid-cols-1 gap-6 px-6 py-6 lg:grid-cols-2">
-        <section className="flex h-[70vh] flex-col rounded-lg border border-zinc-200 bg-white p-5">
+        <section className="flex h-[35vh] flex-col rounded-lg border border-zinc-200 bg-white p-5">
           <NdaChat fields={fields} onFieldsChange={setFields} onCompleteChange={setIsComplete} />
         </section>
         <section className="rounded-lg border border-zinc-200 bg-white p-5">
