@@ -18,9 +18,14 @@ export default function DashboardPage() {
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center px-6 py-12 text-center">
         <h2 className="text-xl font-semibold text-brand-navy">Welcome to Prelegal</h2>
         <p className="mt-2 max-w-md text-sm text-brand-gray">
-          Document drafting tools are coming soon. This is a placeholder for the
-          authenticated dashboard.
+          Chat with our AI assistant to draft your first agreement.
         </p>
+        <Link
+          href="/dashboard/nda/"
+          className="mt-6 rounded-full bg-brand-purple px-5 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
+        >
+          New Mutual NDA
+        </Link>
       </main>
     </div>
   );
