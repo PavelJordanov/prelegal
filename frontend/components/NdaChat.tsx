@@ -5,7 +5,7 @@ import type { MndaFormData } from "@/lib/mnda-content";
 import { postNdaChatTurn, type ChatMessage } from "@/lib/nda-chat-client";
 
 const GREETING =
-  "Let's set up your Mutual NDA. Who are the two parties involved — could you give me each one's name, title, and company?";
+  "Let's set up your Mutual NDA. What's the purpose of this agreement — why are the parties sharing confidential information?";
 
 interface NdaChatProps {
   fields: MndaFormData;
@@ -56,7 +56,7 @@ export default function NdaChat({ fields, onFieldsChange, onCompleteChange }: Nd
             className={
               message.role === "assistant"
                 ? "max-w-[85%] rounded-lg bg-zinc-100 px-3 py-2 text-sm text-brand-navy"
-                : "ml-auto max-w-[85%] rounded-lg bg-brand-blue px-3 py-2 text-sm text-white"
+                : "ml-auto max-w-[85%] rounded-lg bg-brand-blue px-3 py-2 text-sm text-black"
             }
           >
             {message.content}
