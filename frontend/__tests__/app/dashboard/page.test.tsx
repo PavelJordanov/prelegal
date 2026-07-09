@@ -12,12 +12,12 @@ describe("DashboardPage", () => {
     );
   });
 
-  it("shows a link to start a new Mutual NDA", () => {
+  it("shows a link to start a new document", () => {
     render(<DashboardPage />);
 
-    expect(screen.getByRole("link", { name: "New Mutual NDA" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Start a new document" })).toHaveAttribute(
       "href",
-      "/dashboard/nda",
+      "/dashboard/draft",
     );
   });
 });

@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import MndaPreview from "@/components/MndaPreview";
-import { defaultMndaFormData, type MndaFormData } from "@/lib/mnda-content";
+import DocumentPreview from "@/components/DocumentPreview";
+import mutualNda, { type MutualNdaFields } from "@/lib/documents/mutual-nda";
 
-function makeFormData(overrides: Partial<MndaFormData> = {}): MndaFormData {
+function makeFormData(overrides: Partial<MutualNdaFields> = {}): MutualNdaFields {
   return {
-    ...structuredClone(defaultMndaFormData),
+    ...structuredClone(mutualNda.defaultFields),
     ...overrides,
   };
 }
 
-describe("MndaPreview", () => {
+describe("DocumentPreview with the Mutual NDA content module", () => {
   it("renders all 11 Standard Terms section headings", () => {
-    render(<MndaPreview data={makeFormData()} />);
+    render(<DocumentPreview content={mutualNda} data={makeFormData()} />);
     expect(screen.getByText("1. Introduction")).toBeInTheDocument();
     expect(screen.getByText("11. General")).toBeInTheDocument();
     expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(
@@ -29,7 +29,7 @@ describe("MndaPreview", () => {
       governingLaw: "Delaware",
       jurisdiction: "New Castle, DE",
     });
-    render(<MndaPreview data={data} />);
+    render(<DocumentPreview content={mutualNda} data={data} />);
 
     expect(screen.getByText("Acme Corp")).toBeInTheDocument();
     expect(screen.getByText("Jane Doe")).toBeInTheDocument();
@@ -39,7 +39,7 @@ describe("MndaPreview", () => {
   });
 
   it("shows bracketed fallback placeholders for empty party and cover page fields", () => {
-    render(<MndaPreview data={makeFormData()} />);
+    render(<DocumentPreview content={mutualNda} data={makeFormData()} />);
 
     expect(screen.getAllByText("[Name]")).toHaveLength(2);
     expect(screen.getAllByText("[Title]")).toHaveLength(2);
@@ -51,7 +51,7 @@ describe("MndaPreview", () => {
 
   it("renders the perpetuity confidentiality term without the 'survive for in perpetuity' grammar bug", () => {
     const data = makeFormData({ confidentialityTerm: "perpetuity" });
-    render(<MndaPreview data={data} />);
+    render(<DocumentPreview content={mutualNda} data={data} />);
 
     const termSection = screen.getByText(/will survive/);
     expect(termSection.textContent).toContain("will survive in perpetuity");

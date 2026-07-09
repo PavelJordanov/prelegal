@@ -2,12 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { pdf } from "@react-pdf/renderer";
-import NdaChatPage from "@/app/dashboard/nda/page";
-import { defaultMndaFormData } from "@/lib/mnda-content";
+import DraftPage from "@/app/dashboard/draft/page";
+import type { DraftTurnResult } from "@/components/DraftChat";
 
-// The chat conversation flow itself is covered by __tests__/components/NdaChat.test.tsx.
-// Here we only care about page.tsx's wiring: does the preview reflect fields NdaChat
-// reports, and is the Download button correctly gated on completion.
+// The chat conversation flow itself is covered by __tests__/components/DraftChat.test.tsx.
+// Here we only care about page.tsx's wiring: does the preview appear once a document type
+// resolves, does it reflect fields DraftChat reports, and is Download correctly gated.
 let resolveToBlob: (blob: Blob) => void;
 
 vi.mock("@react-pdf/renderer", async () => {
@@ -25,31 +25,36 @@ vi.mock("@react-pdf/renderer", async () => {
   };
 });
 
-vi.mock("@/components/NdaChat", () => ({
-  default: ({
-    onFieldsChange,
-    onCompleteChange,
-  }: {
-    onFieldsChange: (fields: typeof defaultMndaFormData) => void;
-    onCompleteChange: (isComplete: boolean) => void;
-  }) => (
+vi.mock("@/components/DraftChat", () => ({
+  default: ({ onTurnComplete }: { onTurnComplete: (result: DraftTurnResult) => void }) => (
     <div>
       <button
         onClick={() =>
-          onFieldsChange({
-            ...defaultMndaFormData,
-            party1: { ...defaultMndaFormData.party1, name: "Acme Corp" },
+          onTurnComplete({
+            documentType: "mutual-nda",
+            fields: { "party1.name": "Acme Corp" },
+            isComplete: false,
           })
         }
       >
-        Simulate fields update
+        Simulate document match
       </button>
-      <button onClick={() => onCompleteChange(true)}>Simulate complete</button>
+      <button
+        onClick={() =>
+          onTurnComplete({
+            documentType: "mutual-nda",
+            fields: { "party1.name": "Acme Corp" },
+            isComplete: true,
+          })
+        }
+      >
+        Simulate complete
+      </button>
     </div>
   ),
 }));
 
-describe("NdaChatPage", () => {
+describe("DraftPage", () => {
   let createObjectURL: ReturnType<typeof vi.fn>;
   let revokeObjectURL: ReturnType<typeof vi.fn>;
   let clickSpy: ReturnType<typeof vi.spyOn>;
@@ -66,11 +71,13 @@ describe("NdaChatPage", () => {
     clickSpy.mockRestore();
   });
 
-  it("reflects fields reported by the chat in the live preview", async () => {
+  it("shows a placeholder until the document type is known, then the preview", async () => {
     const user = userEvent.setup();
-    render(<NdaChatPage />);
+    render(<DraftPage />);
 
-    await user.click(screen.getByRole("button", { name: "Simulate fields update" }));
+    expect(screen.getByText(/preview will appear here/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Simulate document match" }));
 
     const preview = screen.getByRole("article");
     expect(within(preview).getByText("Acme Corp")).toBeInTheDocument();
@@ -79,7 +86,7 @@ describe("NdaChatPage", () => {
   it("disables Download until the chat reports completion, then downloads the PDF", async () => {
     const user = userEvent.setup();
     const createElementSpy = vi.spyOn(document, "createElement");
-    render(<NdaChatPage />);
+    render(<DraftPage />);
 
     expect(screen.getByRole("button", { name: "Download PDF" })).toBeDisabled();
 
@@ -107,7 +114,7 @@ describe("NdaChatPage", () => {
       toBlob: () => Promise.reject(new Error("rendering failed")),
     } as ReturnType<typeof pdf>);
     const user = userEvent.setup();
-    render(<NdaChatPage />);
+    render(<DraftPage />);
 
     await user.click(screen.getByRole("button", { name: "Simulate complete" }));
     await user.click(screen.getByRole("button", { name: "Download PDF" }));
