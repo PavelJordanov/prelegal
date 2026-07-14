@@ -12,6 +12,8 @@ def test_health_returns_ok():
 
 
 def test_health_resets_database_between_starts(tmp_path, monkeypatch):
+    import sqlite3
+
     from app import db
 
     monkeypatch.setattr(db, "DATA_DIR", tmp_path)
@@ -23,4 +25,10 @@ def test_health_resets_database_between_starts(tmp_path, monkeypatch):
     db.reset_database()
 
     assert db.DB_PATH.exists()
-    assert db.DB_PATH.read_text() == ""
+    with sqlite3.connect(db.DB_PATH) as conn:
+        tables = {
+            row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
+        }
+    # sqlite_sequence is SQLite's own bookkeeping table, auto-created because
+    # our tables use AUTOINCREMENT.
+    assert tables == {"users", "documents", "sqlite_sequence"}

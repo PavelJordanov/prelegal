@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import DocumentPreview from "@/components/DocumentPreview";
+import DocumentPreview, { DRAFT_DISCLAIMER } from "@/components/DocumentPreview";
 import mutualNda, { type MutualNdaFields } from "@/lib/documents/mutual-nda";
 
 function makeFormData(overrides: Partial<MutualNdaFields> = {}): MutualNdaFields {
@@ -47,6 +47,12 @@ describe("DocumentPreview with the Mutual NDA content module", () => {
     expect(screen.getAllByText("[Notice Address]")).toHaveLength(2);
     expect(screen.getByText("[Fill in state]")).toBeInTheDocument();
     expect(screen.getByText("[Fill in city or county and state]")).toBeInTheDocument();
+  });
+
+  it("shows the draft/legal-review disclaimer", () => {
+    render(<DocumentPreview content={mutualNda} data={makeFormData()} />);
+
+    expect(screen.getByText(DRAFT_DISCLAIMER)).toBeInTheDocument();
   });
 
   it("renders the perpetuity confidentiality term without the 'survive for in perpetuity' grammar bug", () => {

@@ -8,37 +8,53 @@ const GREETING =
   "Tell me what kind of agreement you're looking to put together, and I'll help you draft it.";
 
 export interface DraftTurnResult {
+  documentId: number | null;
   documentType: DocumentType | null;
   fields: Record<string, unknown>;
   isComplete: boolean;
 }
 
 interface DraftChatProps {
+  documentId: number | null;
   documentType: DocumentType | null;
   fields: Record<string, unknown>;
+  /** Transcript to resume from, e.g. when reopening a saved draft. Only read
+   * on first render - later prop changes don't reset an in-progress chat. */
+  initialMessages?: ChatMessage[];
   onTurnComplete: (result: DraftTurnResult) => void;
 }
 
-export default function DraftChat({ documentType, fields, onTurnComplete }: DraftChatProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: GREETING },
-  ]);
+export default function DraftChat({
+  documentId,
+  documentType,
+  fields,
+  initialMessages,
+  onTurnComplete,
+}: DraftChatProps) {
+  const [messages, setMessages] = useState<ChatMessage[]>(
+    initialMessages && initialMessages.length > 0
+      ? initialMessages
+      : [{ role: "assistant", content: GREETING }],
+  );
   const [draft, setDraft] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("Something went wrong.");
 
   async function sendTurn(nextMessages: ChatMessage[]) {
     setMessages(nextMessages);
     setStatus("sending");
     try {
-      const response = await postChatTurn(nextMessages, documentType, fields);
+      const response = await postChatTurn(nextMessages, documentId, documentType, fields);
       setMessages([...nextMessages, { role: "assistant", content: response.assistantMessage }]);
       onTurnComplete({
+        documentId: response.documentId,
         documentType: response.documentType,
         fields: response.fields,
         isComplete: response.isComplete,
       });
       setStatus("idle");
-    } catch {
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Something went wrong.");
       setStatus("error");
     }
   }
@@ -78,7 +94,7 @@ export default function DraftChat({ documentType, fields, onTurnComplete }: Draf
         )}
         {status === "error" && (
           <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-            <span>Something went wrong.</span>
+            <span>{errorMessage}</span>
             <button
               type="button"
               onClick={handleRetry}
