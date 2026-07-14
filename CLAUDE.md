@@ -8,7 +8,7 @@ The available documents are covered in the catalog.json file in the project root
 
 @catalog.json
 
-The current implementation is a Dockerized FastAPI + Next.js app with a fake login screen (no real authentication yet) gating a dashboard that links into a single AI chat interface covering all 11 document types from catalog.json. Real authentication and document persistence are not yet built — see Implementation Status below.
+The current implementation is a Dockerized FastAPI + Next.js app with real signup/signin authentication (JWT in an HttpOnly cookie, bcrypt-hashed passwords) gating a dashboard that links into a single AI chat interface covering all 11 document types from catalog.json, plus a My Documents screen to resume drafts or revisit completed documents. See Implementation Status below.
 
 ## Development process
 
@@ -83,9 +83,19 @@ Backend available at http://localhost:8000
 - DPA and AI Addendum (contract riders whose text assumes a parent agreement already exists) are offered as standalone documents like the other 9, with no cross-document linking (document persistence doesn't exist yet — that's PL-7)
 - CSA/PSA/Software License Agreement's Order Form fee/line-item structures are captured as free-text summary fields in this round, not structured repeating line items — a deliberate scope boundary
 
-### Not started (planned)
-- **PL-7**: Real user authentication (JWT in HttpOnly cookies, bcrypt-hashed passwords, signup/signin/signout), document persistence, and a My Documents UI
+### Completed (PL-7)
+- Real user authentication replacing the fake `/login` screen: `backend/app/auth/` (`security.py` for bcrypt hashing + JWT issuing/verification, `deps.py` for the `get_current_user` FastAPI dependency, `router.py` for `POST /api/auth/signup|signin|signout` and `GET /api/auth/me`). Session state is a JWT in an HttpOnly, SameSite=Lax cookie (`JWT_SECRET_KEY` in `.env`, 7-day expiry) rather than a bearer token in localStorage, since the frontend is same-origin static export served by this API
+- New `users` and `documents` tables, created inside `db.reset_database()` on every startup alongside the existing wipe-and-recreate behavior (still fully ephemeral across restarts, per this ticket's explicit scope)
+- Document persistence (`backend/app/documents.py`, `documents_router.py`): a `documents` row is created once the chat's intake step classifies a document type, then updated on every subsequent turn — covering both in-progress drafts (`is_complete=False`) and finished documents in one table. `POST /api/chat` gained a `document_id` field (nullable) and now requires authentication; `GET/DELETE /api/documents/{id}` and `GET /api/documents` are scoped to the requesting user, returning 404 (not 403) for another user's document to avoid confirming it exists
+- Frontend auth gating is client-side only (`frontend/app/dashboard/layout.tsx` calls `GET /api/auth/me` on mount and redirects to `/login/` if unauthenticated), since the static export (`output: "export"`) supports no middleware, no server actions, and no `next/headers` cookie access — this is the same SPA-style pattern Next's own docs recommend for static exports
+- New `/signup` page; `/login` now actually calls the auth endpoints instead of navigating unconditionally
+- New My Documents screen (`/dashboard/documents`): card grid listing a user's documents with status (Draft/Complete), "Continue"/"View" linking to `/dashboard/draft/?id=N` to resume the chat or revisit the finished document, and delete (with an inline, non-modal confirmation rather than a native `confirm()` dialog)
+- `/dashboard/draft` resumes a saved document via `?id=`, hydrating `DraftChat`'s transcript and the extracted fields from `GET /api/documents/{id}`; the page content is keyed by that id so navigating to a different document (or to a fresh one) fully remounts the chat instead of carrying over stale state
+- Visual redesign: a persistent navy sidebar (`frontend/components/Sidebar.tsx`) replaces the copy-pasted per-page header, using the previously-unused `brand-yellow` token to mark the active nav item; a serif display face (`Source Serif 4`) is applied to document preview headings only, keeping "paper" content visually distinct from the sans-serif app chrome
+- Legal disclaimer ("AI-generated draft ... must be reviewed by a qualified attorney") added as both plain footer text and a rotated translucent "DRAFT" stamp, on the on-screen preview (`DocumentPreview.tsx`) and in the downloaded PDF (`DocumentPdfDocument.tsx`)
 
 ### Current API Endpoints
 - `GET /api/health` - Health check (also verifies SQLite connectivity)
-- `POST /api/chat` - One turn of the document drafting chat, covering intake (document-type matching) and field-gathering for all 11 document types (see PL-6 above)
+- `POST /api/auth/signup` / `POST /api/auth/signin` / `POST /api/auth/signout` / `GET /api/auth/me` - Signup, signin, signout, and current-user lookup (see PL-7 above)
+- `POST /api/chat` - One turn of the document drafting chat, covering intake (document-type matching) and field-gathering for all 11 document types (see PL-6 above); requires authentication and persists/updates a `documents` row once a document type is known (see PL-7 above)
+- `GET /api/documents` / `GET /api/documents/{id}` / `DELETE /api/documents/{id}` - List, fetch, and delete the current user's drafted documents (see PL-7 above)

@@ -3,21 +3,21 @@ import { render, screen } from "@testing-library/react";
 import DashboardPage from "@/app/dashboard/page";
 
 describe("DashboardPage", () => {
-  it("shows a sign out link back to the login screen", () => {
-    render(<DashboardPage />);
-
-    expect(screen.getByRole("link", { name: "Sign out" })).toHaveAttribute(
-      "href",
-      "/login",
-    );
-  });
-
   it("shows a link to start a new document", () => {
     render(<DashboardPage />);
 
     expect(screen.getByRole("link", { name: "Start a new document" })).toHaveAttribute(
       "href",
       "/dashboard/draft",
+    );
+  });
+
+  it("shows a link to view previously drafted documents", () => {
+    render(<DashboardPage />);
+
+    expect(screen.getByRole("link", { name: "View my documents" })).toHaveAttribute(
+      "href",
+      "/dashboard/documents",
     );
   });
 });

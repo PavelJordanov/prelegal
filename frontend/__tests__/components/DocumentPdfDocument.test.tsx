@@ -81,6 +81,13 @@ describe("DocumentPdfDocument with the Mutual NDA content module", () => {
     expect(text).toMatch(/will survive\s+for 5 year\(s\)/);
   });
 
+  it("includes the DRAFT stamp and the legal-review disclaimer in the PDF text", async () => {
+    const text = await renderPdfText(makeFormData());
+
+    expect(text).toContain("DRAFT");
+    expect(text).toMatch(/must be reviewed by a qualified\s+attorney/);
+  });
+
   it("renders Cyrillic and Latin Extended party names correctly (Noto Sans coverage)", async () => {
     const data = makeFormData({
       party1: { ...mutualNda.defaultFields.party1, company: "ООО Тест" },

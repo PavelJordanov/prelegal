@@ -3,9 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "@/lib/auth-client";
+import { signUp } from "@/lib/auth-client";
 
-export default function LoginPage() {
+const MIN_PASSWORD_LENGTH = 8;
+
+export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,13 +16,17 @@ export default function LoginPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+      return;
+    }
     setError(null);
     setIsSubmitting(true);
     try {
-      await signIn(email, password);
+      await signUp(email, password);
       router.push("/dashboard/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Incorrect email or password.");
+      setError(err instanceof Error ? err.message : "Couldn't create your account.");
       setIsSubmitting(false);
     }
   }
@@ -30,7 +36,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm rounded-lg border border-zinc-200 bg-white p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-brand-navy">Prelegal</h1>
         <p className="mt-1 text-sm text-brand-gray">
-          Sign in to start drafting your agreements.
+          Create an account to start drafting your agreements.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
@@ -59,12 +65,13 @@ export default function LoginPage() {
               id="password"
               name="password"
               type="password"
-              autoComplete="current-password"
+              autoComplete="new-password"
               required
+              minLength={MIN_PASSWORD_LENGTH}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-black outline-none focus:border-brand-blue"
-              placeholder="••••••••"
+              placeholder="At least 8 characters"
             />
           </div>
 
@@ -75,14 +82,14 @@ export default function LoginPage() {
             disabled={isSubmitting}
             className="mt-2 rounded-full bg-brand-purple px-5 py-2 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50"
           >
-            {isSubmitting ? "Signing in…" : "Sign in"}
+            {isSubmitting ? "Creating account…" : "Sign up"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-brand-gray">
-          Don&apos;t have an account?{" "}
-          <Link href="/signup/" className="font-medium text-brand-blue hover:underline">
-            Sign up
+          Already have an account?{" "}
+          <Link href="/login/" className="font-medium text-brand-blue hover:underline">
+            Sign in
           </Link>
         </p>
       </div>

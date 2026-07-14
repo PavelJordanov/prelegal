@@ -1,6 +1,7 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { DocumentContent, PartyBlock } from "@/lib/documents/types";
 import { NOTO_SANS_FAMILY, registerNotoSansFont } from "@/lib/pdf-fonts";
+import { DRAFT_DISCLAIMER } from "@/components/DocumentPreview";
 
 registerNotoSansFont();
 
@@ -12,6 +13,28 @@ const styles = StyleSheet.create({
   paragraph: { marginBottom: 4 },
   partyRow: { flexDirection: "row", gap: 24, marginTop: 8 },
   partyColumn: { flex: 1 },
+  stamp: {
+    position: "absolute",
+    top: 28,
+    right: 48,
+    border: "2pt solid #dc2626",
+    borderRadius: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 10,
+    fontSize: 13,
+    fontWeight: 700,
+    color: "#dc2626",
+    opacity: 0.4,
+    transform: "rotate(-12deg)",
+  },
+  disclaimer: {
+    marginTop: 16,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#e4e4e7",
+    fontSize: 8,
+    color: "#888888",
+  },
 });
 
 function PartyBlockView({ block }: { block: PartyBlock }) {
@@ -39,6 +62,7 @@ export default function DocumentPdfDocument<TFields>({
   return (
     <Document>
       <Page size="LETTER" style={styles.page}>
+        <Text style={styles.stamp}>DRAFT</Text>
         <Text style={styles.title}>{content.title}</Text>
 
         <Text style={styles.h2}>{content.summaryHeading}</Text>
@@ -64,6 +88,8 @@ export default function DocumentPdfDocument<TFields>({
             <Text style={styles.paragraph}>{section.body}</Text>
           </View>
         ))}
+
+        <Text style={styles.disclaimer}>{DRAFT_DISCLAIMER}</Text>
       </Page>
     </Document>
   );
