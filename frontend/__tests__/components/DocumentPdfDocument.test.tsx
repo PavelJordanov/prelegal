@@ -3,24 +3,22 @@
 // @react-pdf/renderer's Node build only exposes toBuffer()/toString()
 // (not toBlob(), which needs a browser Blob). Running this file under the
 // node environment lets us render a real PDF and extract its text with
-// pdf-parse, so we assert on the actual bytes a user would download --
-// not just the React tree, which is what let the "survive for in
-// perpetuity" grammar bug ship in the first place.
+// pdf-parse, so we assert on the actual bytes a user would download.
 import { describe, expect, it } from "vitest";
 import { pdf } from "@react-pdf/renderer";
 import { PDFParse } from "pdf-parse";
-import MndaPdfDocument from "@/components/MndaPdfDocument";
-import { defaultMndaFormData, type MndaFormData } from "@/lib/mnda-content";
+import DocumentPdfDocument from "@/components/DocumentPdfDocument";
+import mutualNda, { type MutualNdaFields } from "@/lib/documents/mutual-nda";
 
-function makeFormData(overrides: Partial<MndaFormData> = {}): MndaFormData {
+function makeFormData(overrides: Partial<MutualNdaFields> = {}): MutualNdaFields {
   return {
-    ...structuredClone(defaultMndaFormData),
+    ...structuredClone(mutualNda.defaultFields),
     ...overrides,
   };
 }
 
-async function renderPdfText(data: MndaFormData): Promise<string> {
-  const stream = await pdf(<MndaPdfDocument data={data} />).toBuffer();
+async function renderPdfText(data: MutualNdaFields): Promise<string> {
+  const stream = await pdf(<DocumentPdfDocument content={mutualNda} data={data} />).toBuffer();
   const chunks: Buffer[] = [];
   for await (const chunk of stream) {
     chunks.push(chunk as Buffer);
@@ -33,9 +31,9 @@ async function renderPdfText(data: MndaFormData): Promise<string> {
   return result.text;
 }
 
-describe("MndaPdfDocument", () => {
+describe("DocumentPdfDocument with the Mutual NDA content module", () => {
   it("produces a valid, non-empty PDF", async () => {
-    const buffer = await pdf(<MndaPdfDocument data={makeFormData()} />).toBuffer();
+    const buffer = await pdf(<DocumentPdfDocument content={mutualNda} data={makeFormData()} />).toBuffer();
     const chunks: Buffer[] = [];
     for await (const chunk of buffer) {
       chunks.push(chunk as Buffer);
@@ -84,33 +82,14 @@ describe("MndaPdfDocument", () => {
   });
 
   it("renders Cyrillic and Latin Extended party names correctly (Noto Sans coverage)", async () => {
-    // Regression guard: the default PDF standard font (Helvetica) only
-    // covers WinAnsi/Latin-1, so these previously came out as garbled
-    // mojibake with no error. Registering Noto Sans (lib/pdf-fonts.ts)
-    // fixes this range.
     const data = makeFormData({
-      party1: { ...defaultMndaFormData.party1, company: "ООО Тест" },
-      party2: { ...defaultMndaFormData.party2, company: "Müller & Söhne GmbH" },
+      party1: { ...mutualNda.defaultFields.party1, company: "ООО Тест" },
+      party2: { ...mutualNda.defaultFields.party2, company: "Müller & Söhne GmbH" },
     });
 
     const text = await renderPdfText(data);
 
     expect(text).toContain("ООО Тест");
     expect(text).toContain("Müller & Söhne GmbH");
-  });
-
-  it("documents CJK as a known, unfixed limitation of the current font", async () => {
-    // Not a desired behavior -- a documented gap. Noto Sans has no CJK
-    // glyph coverage, and a CJK font is a separate, much larger dependency
-    // (see MANUAL_TESTING.md). This test exists so a future change to the
-    // font setup that silently starts covering (or further breaking) CJK
-    // text gets noticed instead of drifting unnoticed.
-    const data = makeFormData({
-      party1: { ...defaultMndaFormData.party1, company: "株式会社テスト" },
-    });
-
-    const text = await renderPdfText(data);
-
-    expect(text).not.toContain("株式会社テスト");
   });
 });

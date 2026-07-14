@@ -1,12 +1,5 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
-import {
-  coverPageSummary,
-  fillPlaceholders,
-  partyFieldConfig,
-  standardTermsSections,
-  type MndaFormData,
-  type PartyDetails,
-} from "@/lib/mnda-content";
+import type { DocumentContent, PartyBlock } from "@/lib/documents/types";
 import { NOTO_SANS_FAMILY, registerNotoSansFont } from "@/lib/pdf-fonts";
 
 registerNotoSansFont();
@@ -21,44 +14,54 @@ const styles = StyleSheet.create({
   partyColumn: { flex: 1 },
 });
 
-function PartyBlock({ label, party }: { label: string; party: PartyDetails }) {
+function PartyBlockView({ block }: { block: PartyBlock }) {
   return (
     <View style={styles.partyColumn}>
-      <Text style={styles.h3}>{label}</Text>
-      {partyFieldConfig.map((field) => (
+      <Text style={styles.h3}>{block.label}</Text>
+      {block.fieldConfig.map((field) => (
         <Text key={field.key} style={styles.paragraph}>
-          {party[field.key] || field.placeholder}
+          {block.data[field.key] || field.placeholder}
         </Text>
       ))}
     </View>
   );
 }
 
-export default function MndaPdfDocument({ data }: { data: MndaFormData }) {
+export default function DocumentPdfDocument<TFields>({
+  content,
+  data,
+}: {
+  content: DocumentContent<TFields>;
+  data: TFields;
+}) {
+  const parties = content.parties(data);
+
   return (
     <Document>
       <Page size="LETTER" style={styles.page}>
-        <Text style={styles.title}>Mutual Non-Disclosure Agreement</Text>
+        <Text style={styles.title}>{content.title}</Text>
 
-        <Text style={styles.h2}>Cover Page</Text>
-
-        {coverPageSummary(data).map((item) => (
+        <Text style={styles.h2}>{content.summaryHeading}</Text>
+        {content.summarySections(data).map((item) => (
           <View key={item.label}>
             <Text style={styles.h3}>{item.label}</Text>
             <Text style={styles.paragraph}>{item.value}</Text>
           </View>
         ))}
 
-        <View style={styles.partyRow}>
-          <PartyBlock label="Party 1" party={data.party1} />
-          <PartyBlock label="Party 2" party={data.party2} />
-        </View>
+        {parties.length > 0 && (
+          <View style={styles.partyRow}>
+            {parties.map((block) => (
+              <PartyBlockView key={block.label} block={block} />
+            ))}
+          </View>
+        )}
 
         <Text style={styles.h2}>Standard Terms</Text>
-        {standardTermsSections.map((section) => (
+        {content.bodySections(data).map((section) => (
           <View key={section.title}>
             <Text style={styles.h3}>{section.title}</Text>
-            <Text style={styles.paragraph}>{fillPlaceholders(section.body, data)}</Text>
+            <Text style={styles.paragraph}>{section.body}</Text>
           </View>
         ))}
       </Page>

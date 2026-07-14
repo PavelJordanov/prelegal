@@ -1,19 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import type { MndaFormData } from "@/lib/mnda-content";
-import { postNdaChatTurn, type ChatMessage } from "@/lib/nda-chat-client";
+import type { DocumentType } from "@/lib/documents/types";
+import { postChatTurn, type ChatMessage } from "@/lib/chat-client";
 
 const GREETING =
-  "Let's set up your Mutual NDA. What's the purpose of this agreement — why are the parties sharing confidential information?";
+  "Tell me what kind of agreement you're looking to put together, and I'll help you draft it.";
 
-interface NdaChatProps {
-  fields: MndaFormData;
-  onFieldsChange: (fields: MndaFormData) => void;
-  onCompleteChange: (isComplete: boolean) => void;
+export interface DraftTurnResult {
+  documentType: DocumentType | null;
+  fields: Record<string, unknown>;
+  isComplete: boolean;
 }
 
-export default function NdaChat({ fields, onFieldsChange, onCompleteChange }: NdaChatProps) {
+interface DraftChatProps {
+  documentType: DocumentType | null;
+  fields: Record<string, unknown>;
+  onTurnComplete: (result: DraftTurnResult) => void;
+}
+
+export default function DraftChat({ documentType, fields, onTurnComplete }: DraftChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: GREETING },
   ]);
@@ -24,10 +30,13 @@ export default function NdaChat({ fields, onFieldsChange, onCompleteChange }: Nd
     setMessages(nextMessages);
     setStatus("sending");
     try {
-      const response = await postNdaChatTurn(nextMessages, fields);
+      const response = await postChatTurn(nextMessages, documentType, fields);
       setMessages([...nextMessages, { role: "assistant", content: response.assistantMessage }]);
-      onFieldsChange(response.fields);
-      onCompleteChange(response.isComplete);
+      onTurnComplete({
+        documentType: response.documentType,
+        fields: response.fields,
+        isComplete: response.isComplete,
+      });
       setStatus("idle");
     } catch {
       setStatus("error");

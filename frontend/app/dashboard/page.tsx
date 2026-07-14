@@ -21,10 +21,10 @@ export default function DashboardPage() {
           Chat with our AI assistant to draft your first agreement.
         </p>
         <Link
-          href="/dashboard/nda/"
+          href="/dashboard/draft/"
           className="mt-6 rounded-full bg-brand-purple px-5 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
         >
-          New Mutual NDA
+          Start a new document
         </Link>
       </main>
     </div>

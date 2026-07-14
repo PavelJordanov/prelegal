@@ -1,41 +1,22 @@
-"""API request/response models for the NDA chat endpoint.
+"""API request/response models for the generic multi-document chat endpoint.
 
-Field names mirror ``frontend/lib/mnda-content.ts``'s ``MndaFormData`` 1:1,
-serialized as camelCase on the wire so the frontend can consume the JSON
-without a translation layer.
+Field values travel as a flat, string-keyed dict rather than a typed model
+per document - the 11 supported document types have too different a field
+shape (5 to 34 fields, some grouped like ``party1.name``) to share one
+Pydantic model. Each document's shape is instead defined declaratively by its
+``DocumentSpec`` (see ``chat/field_spec.py``).
 """
 
-from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
-DEFAULT_PURPOSE = "Evaluating whether to enter into a business relationship with the other party."
+FieldValue = str | int | bool | None
 
 
 class CamelModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
-
-class PartyDetails(CamelModel):
-    name: str = ""
-    title: str = ""
-    company: str = ""
-    notice_address: str = ""
-
-
-class MndaFields(CamelModel):
-    party1: PartyDetails = PartyDetails()
-    party2: PartyDetails = PartyDetails()
-    purpose: str = DEFAULT_PURPOSE
-    effective_date: str = Field(default_factory=lambda: date.today().isoformat())
-    mnda_term: Literal["expires", "continues"] = "expires"
-    mnda_term_years: int = 1
-    confidentiality_term: Literal["years", "perpetuity"] = "years"
-    confidentiality_term_years: int = 1
-    governing_law: str = ""
-    jurisdiction: str = ""
 
 
 class ChatMessage(CamelModel):
@@ -43,12 +24,14 @@ class ChatMessage(CamelModel):
     content: str
 
 
-class NdaChatRequest(CamelModel):
+class ChatTurnRequest(CamelModel):
+    document_type: str | None = None
     messages: list[ChatMessage]
-    current_fields: MndaFields = MndaFields()
+    current_fields: dict[str, FieldValue] = {}
 
 
-class NdaChatResponse(CamelModel):
+class ChatTurnResponse(CamelModel):
+    document_type: str | None
     assistant_message: str
-    fields: MndaFields
+    fields: dict[str, FieldValue]
     is_complete: bool

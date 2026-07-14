@@ -5,8 +5,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 
 from app import db
-from app.nda_chat import NdaChatError, run_chat_turn
-from app.schemas import NdaChatRequest, NdaChatResponse
+from app.chat.engine import ChatError
+from app.chat.orchestrate import run_turn
+from app.schemas import ChatTurnRequest, ChatTurnResponse
 
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "static"
 
@@ -27,16 +28,16 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/api/nda/chat")
-def nda_chat(request: NdaChatRequest) -> NdaChatResponse:
+@app.post("/api/chat")
+def chat(request: ChatTurnRequest) -> ChatTurnResponse:
     try:
-        assistant_message, fields, is_complete = run_chat_turn(
-            request.messages, request.current_fields
+        document_type, message, fields, complete = run_turn(
+            request.document_type, request.messages, request.current_fields
         )
-    except NdaChatError as exc:
+    except ChatError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
-    return NdaChatResponse(
-        assistant_message=assistant_message, fields=fields, is_complete=is_complete
+    return ChatTurnResponse(
+        document_type=document_type, assistant_message=message, fields=fields, is_complete=complete
     )
 
 
